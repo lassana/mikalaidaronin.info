@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>macOS on MikalaiDaronin.info</title>
+    <link>https://mikalaidaronin.info/blog/tags/macos/</link>
+    <description>Recent content in macOS on MikalaiDaronin.info</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Sat, 01 Dec 2018 01:27:28 +0300</lastBuildDate>
+    
+        <atom:link href="https://mikalaidaronin.info/blog/tags/macos/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Calendar Today Widget 1.1</title>
+      <link>https://mikalaidaronin.info/blog/posts/calendar-today-widget-1.1/</link>
+      <pubDate>Sat, 01 Dec 2018 01:27:28 +0300</pubDate>
+      
+      <guid>https://mikalaidaronin.info/blog/posts/calendar-today-widget-1.1/</guid>
+      <description>&lt;p&gt;Today I released an update of a simple but pretty useful macOS Today Extension widget: &lt;a href=&#34;https://github.com/lassana/calendar-in-notification-center&#34;&gt;Calendar Widget&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&#34;what-is-that&#34;&gt;What is that&lt;/h2&gt;
+&lt;!-- raw HTML omitted --&gt;
+&lt;p&gt;After I switched from Linux + KDE to macOS, I suffered from lack of various stuff, one of which is a simple calendar widget, which is accessible with one click on the system panel. As soon as I started using macOS, I began to look for alternatives.&lt;/p&gt;
+&lt;p&gt;As for calendar, I found two projects: &lt;a href=&#34;https://github.com/SamRothCA/Today-Scripts&#34;&gt;Today Scripts&lt;/a&gt; and &lt;a href=&#34;https://github.com/chenggiant/calendar-in-notification-center&#34;&gt;Calendar&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;The first one is a quite simple widget that only allow to display an output of a shell script. It is enough to display the current month, but there is not way to get additional features working, such as &lt;em&gt;Go to next/previous month&lt;/em&gt;.&lt;/p&gt;
+&lt;p&gt;The second one seemed exactly what I needed, unfortunately, the original project and all its forks were abandoned, so I started to maintain my own version. There isn&amp;rsquo;t anything particularly complicated except that Apple loves to change the &lt;!-- raw HTML omitted --&gt;Aqua&lt;!-- raw HTML omitted --&gt; appearance.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;em&gt;10.10 Yosemite&lt;/em&gt;, &lt;em&gt;10.11 El Capitan&lt;/em&gt;, and &lt;em&gt;10.12 Sierra&lt;/em&gt; used fully dark Notification Center, the original version of Calendar was designed for these versions.&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;10.13 High Sierra&lt;/em&gt; significantly changed it and the Notification Center became fully white regardless of system settings. It required to change all colors used in the app.&lt;/li&gt;
+&lt;li&gt;Finally, &lt;em&gt;10.14 Mojave&lt;/em&gt; introduced two different themes: Light and Dark.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;As you might expect, Mojave required making new changed in the Calendar widget. But in fact, Mojave does most of the work for you, and the only thing developers should do is to use &lt;a href=&#34;https://developer.apple.com/documentation/appkit/nscolor/ui_element_colors&#34;&gt;semantic colors&lt;/a&gt; (such as &lt;code&gt;selectedTextColor&lt;/code&gt;, &lt;code&gt;linkColor&lt;/code&gt;, etc.) in their application or create &lt;a href=&#34;https://developer.apple.com/library/archive/documentation/Xcode/Reference/xcode_ref-Asset_Catalog_Format/Named_Color.html&#34;&gt;a custom color set&lt;/a&gt;. All these steps are comprehensively described in the &lt;a href=&#34;https://developer.apple.com/documentation/appkit/supporting_dark_mode_in_your_interface&#34;&gt;Apple article&lt;/a&gt; about supporting new Dark Mode.&lt;/p&gt;
+&lt;p&gt;It could seem that if I used semantic colors semantic colors from the beginning, no changes would be required to support new Mojave Dark Mode. However, there is a thing which isn&amp;rsquo;t covered in the migration guide: regardless of the fact that the Calendar app was compiled using Xcode 10, macOS 10.14 executes the widget in backward compatibility mode, ignoring all Dark theme-specific color sets in the Asset catalog and even semantic colors. It revealed that to get all Mojave Dark theme features working in a Today Extension it is required to set the following parameter in &lt;code&gt;Info.plist&lt;/code&gt; to &lt;code&gt;3.0&lt;/code&gt;:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;&amp;lt;key&amp;gt;NSExtension&amp;lt;/key&amp;gt;
+&amp;lt;dict&amp;gt;
+  &amp;lt;key&amp;gt;NSExtensionAttributes&amp;lt;/key&amp;gt;
+  &amp;lt;dict&amp;gt;
+   &amp;lt;key&amp;gt;NSExtensionPointVersion&amp;lt;/key&amp;gt;
+   &amp;lt;string&amp;gt;3.0&amp;lt;/string&amp;gt;
+  &amp;lt;/dict&amp;gt;
+&amp;lt;/dict&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Surprisingly, Apple has never explained what &lt;code&gt;NSExtensionPointVersion&lt;/code&gt; parameter actually does.&lt;/p&gt;
+&lt;p&gt;The final result with Light and Dark themes, respectively:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://mikalaidaronin.info/images/calendar-1.1.png&#34; alt=&#34;Screen Shot on macOS 10.14 Mojave&#34;&gt;&lt;/p&gt;
+&lt;h2 id=&#34;download&#34;&gt;Download&lt;/h2&gt;
+&lt;p&gt;You can grab Calendar Widget app on the &lt;a href=&#34;https://github.com/lassana/calendar-in-notification-center/releases/tag/calendar-1.1&#34;&gt;Releases&lt;/a&gt; page: just extract it to somewhere, double-click and add a new widget in the macOS Notification Center.&lt;/p&gt;
+&lt;!-- raw HTML omitted --&gt;</description>
+    </item>
+    
+  </channel>
+</rss>

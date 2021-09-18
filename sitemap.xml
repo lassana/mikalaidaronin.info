@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://mikalaidaronin.info/</loc>
+    <lastmod>2021-09-18T00:00:00+03:00</lastmod>
+  </url><url>
+    <loc>https://mikalaidaronin.info/blog/posts/xamarin-swift-bindings/</loc>
+    <lastmod>2020-02-11T19:20:38+03:00</lastmod>
+  </url><url>
+    <loc>https://mikalaidaronin.info/blog/</loc>
+    <lastmod>2020-02-11T19:20:38+03:00</lastmod>
+  </url><url>
+    <loc>https://mikalaidaronin.info/blog/tags/xamarin/</loc>
+    <lastmod>2020-02-11T19:20:38+03:00</lastmod>
+  </url><url>
+    <loc>https://mikalaidaronin.info/blog/posts/xamarin-forms-password-autofill/</loc>
+    <lastmod>2019-06-12T10:52:04+03:00</lastmod>
+  </url><url>
+    <loc>https://mikalaidaronin.info/blog/posts/calendar-today-widget-1.1/</loc>
+    <lastmod>2018-12-01T01:27:28+03:00</lastmod>
+  </url><url>
+    <loc>https://mikalaidaronin.info/blog/tags/macos/</loc>
+    <lastmod>2018-12-01T01:27:28+03:00</lastmod>
+  </url>
+</urlset>

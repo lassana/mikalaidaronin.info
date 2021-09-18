@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>xamarin on MikalaiDaronin.info</title>
+    <link>https://mikalaidaronin.info/blog/tags/xamarin/</link>
+    <description>Recent content in xamarin on MikalaiDaronin.info</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Tue, 11 Feb 2020 19:20:38 +0300</lastBuildDate>
+    
+        <atom:link href="https://mikalaidaronin.info/blog/tags/xamarin/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Binding Swift Libraries in Xamarin.iOS</title>
+      <link>https://mikalaidaronin.info/blog/posts/xamarin-swift-bindings/</link>
+      <pubDate>Tue, 11 Feb 2020 19:20:38 +0300</pubDate>
+      
+      <guid>https://mikalaidaronin.info/blog/posts/xamarin-swift-bindings/</guid>
+      <description>&lt;p&gt;There are plenty of guides and blog posts online describing the process of making Xamarin binding for a Swift library, but I&amp;rsquo;ve been always struggling dealing with endless amount of new and new errors. The steps below is a real-world example of binding &lt;a href=&#34;https://github.com/daltoniam/Starscream&#34;&gt;Starscream library&lt;/a&gt; (websockets in Swift for iOS and OSX).&lt;/p&gt;
+&lt;p&gt;Binding Swift libraries is pretty much the same as binding Objective-C code as described in the &lt;a href=&#34;https://docs.microsoft.com/en-us/xamarin/cross-platform/macios/binding/objective-c-libraries?tabs=macos&#34;&gt;&amp;ldquo;Binding Objective-C libraries&amp;rdquo;&lt;/a&gt; guide, with a few limitations:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Swift classes must inherit from &lt;code&gt;NSObject&lt;/code&gt;, i.e. they must be accessible from Objective-C. Swift code which is not accessible from Objective-C is also not accessible from Xamarin.&lt;/li&gt;
+&lt;li&gt;When supporting iOS 12.1 and older, Swift dylibs must be included in the app package.&lt;/li&gt;
+&lt;li&gt;Ideally, Swift classes should be marked with &lt;code&gt;@objc&lt;/code&gt; annotation. Otherwise Swift compiler creates its internal class and protocol names like &lt;code&gt;_TtC10Starscream16FoundationStream&lt;/code&gt;.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id=&#34;1-prepare-your-xcode-swift-project&#34;&gt;1. Prepare your Xcode Swift project&lt;/h2&gt;
+&lt;p&gt;As the first step, the Swift project needs to be opened in Xcode and prepared for build.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/mono/Embeddinator-4000/issues/698#issuecomment-418273196&#34;&gt;Xamarin.iOS currently only supports bitcode for watchOS and tvOS, not iOS&lt;/a&gt;. Since Apple requires all libraries to support the same architectures, you need to disable Bitcode in the Xcode project. Go to your target&amp;rsquo;s Build Settings -&amp;gt; Set Enable Bitcode to &amp;ldquo;No&amp;rdquo;.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Set Build Configuration to &lt;strong&gt;Release&lt;/strong&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://mikalaidaronin.info/images/xcode-build-configuration.png&#34; alt=&#34;Xcode screenshot&#34;&gt;&lt;/p&gt;
+&lt;p&gt;Set the active architecture to &amp;ldquo;Generic iOS device&amp;rdquo; and select Product → Build For → Running in the Xcode menu bar. Next, set the active architecture to any simulator and build the target again.&lt;/p&gt;
+&lt;p&gt;If you are on macOS Mojave 10.14 or below, you might see the following error when trying to build the Xcode project:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;error: Building for Mac Catalyst requires macOS 10.15 or later. (in target &#39;targetA&#39; from project &#39;targetB&#39;)
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Go to the target Build Settings in Xcode and change &lt;code&gt;Supports Mac Catalyst&lt;/code&gt; property to &lt;code&gt;No&lt;/code&gt;:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://mikalaidaronin.info/images/xcode-supports-mac-catalyst.png&#34; alt=&#34;Xcode screenshot&#34;&gt;&lt;/p&gt;
+&lt;p&gt;Locate &lt;code&gt;Release-iphoneos&lt;/code&gt; and &lt;code&gt;Release-iphonesimulator&lt;/code&gt; by choosing &amp;ldquo;Show in Finder&amp;rdquo; in the context menu of your target product. There directories are exactly what you need in the next steps.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://mikalaidaronin.info/images/xcode-build-products.png&#34; alt=&#34;Finder screenshot&#34;&gt;&lt;/p&gt;
+&lt;h2 id=&#34;2-build-a-fat-framework&#34;&gt;2. Build a &amp;ldquo;fat&amp;rdquo; framework&lt;/h2&gt;
+&lt;p&gt;Create a new directory named &lt;code&gt;Starscream.framework&lt;/code&gt; next to &lt;code&gt;Release-iphoneos&lt;/code&gt; and &lt;code&gt;Release-iphonesimulator&lt;/code&gt; and copy all the content of &lt;code&gt;Release-iphoneos&lt;/code&gt; into it:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;$ mkdir Starscream.framework
+$ cp -a Release-iphoneos/Starscream.framework/. Starscream.framework/
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Create a &amp;ldquo;fat&amp;rdquo; binary that will include code for the four architectures: &lt;code&gt;x86_64&lt;/code&gt;, &lt;code&gt;i386&lt;/code&gt;, &lt;code&gt;armv7&lt;/code&gt;, and &lt;code&gt;arm64&lt;/code&gt;.&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;$ lipo -create \
+ Release-iphonesimulator/Starscream.framework/Starscream \
+ Release-iphoneos/Starscream.framework/Starscream \
+ -output Starscream.framework/Starscream
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Verify that the binary contains all required architectures:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;$ lipo -info Starscream.framework/Starscream
+Architectures in the fat file: Starscream.framework/Starscream are: i386 x86_64 armv7 arm64
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;As a result, you should have a binary framework ready to use in Xamarin:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://mikalaidaronin.info/images/starscream.framework.png&#34; alt=&#34;Starscream.framework&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Release-iphoneos&lt;/code&gt; and &lt;code&gt;Release-iphonesimulator&lt;/code&gt; directories are no longer required, you can safely delete them.&lt;/p&gt;
+&lt;h2 id=&#34;3-create-c-bindings-apidefinitionscs--structscs&#34;&gt;3. Create C# bindings (ApiDefinitions.cs &amp;amp; Structs.cs)&lt;/h2&gt;
+&lt;p&gt;First of all, get &lt;a href=&#34;http://aka.ms/objective-sharpie&#34;&gt;the latest version&lt;/a&gt; of Objective Sharpie. The current &amp;ldquo;stable&amp;rdquo; version is 3.4.0 which is quite obsolete and it &lt;a href=&#34;https://github.com/xamarin/xamarin-macios/issues/7109&#34;&gt;doesn&amp;rsquo;t support&lt;/a&gt; Xcode 11 and iOS 13 SDK.&lt;/p&gt;
+&lt;p&gt;Once Objective Sharpie is installed, run the binding command:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;$ sharpie bind \
+ -namespace Starscream \
+ -sdk iphoneos13.2 \
+ Starscream.framework/Headers/*.h \
+ -scope Starscream.framework/Headers \
+ -c -F Starscream.framework/
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Objective Sharpie will generate one or two files: &lt;code&gt;ApiDefinitions.cs&lt;/code&gt; containing the actual binding code, and potentially &lt;code&gt;Structs.cs&lt;/code&gt;, if there is an enumeration in the source code.&lt;/p&gt;
+&lt;p&gt;At this step, create a new Xamarin.iOS biding project in Visual Studio and copy &lt;code&gt;ApiDefinitions.cs&lt;/code&gt; and &lt;code&gt;Structs.cs&lt;/code&gt; along with &lt;code&gt;Starscream.framework&lt;/code&gt; directory into the project. The &lt;code&gt;csproj&lt;/code&gt; file of the binding project should look something like this:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;...
+  &amp;lt;ItemGroup&amp;gt;
+    &amp;lt;ObjcBindingApiDefinition Include=&amp;quot;ApiDefinition.cs&amp;quot; /&amp;gt;
+  &amp;lt;/ItemGroup&amp;gt;
+  &amp;lt;ItemGroup&amp;gt;
+    &amp;lt;ObjcBindingCoreSource Include=&amp;quot;Structs.cs&amp;quot; /&amp;gt;
+  &amp;lt;/ItemGroup&amp;gt;
+  &amp;lt;ItemGroup&amp;gt;
+    &amp;lt;NativeReference Include=&amp;quot;Starscream.framework&amp;quot;&amp;gt;
+      &amp;lt;Kind&amp;gt;Framework&amp;lt;/Kind&amp;gt;
+      &amp;lt;SmartLink&amp;gt;False&amp;lt;/SmartLink&amp;gt;
+    &amp;lt;/NativeReference&amp;gt;
+  &amp;lt;/ItemGroup&amp;gt;
+...
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;As the next step, you have to manually verify binding code and fix all the issues Objective Sharpie failed to solve on its own. Common errors are:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Missing base types&lt;/li&gt;
+&lt;li&gt;Missing namespace imports&lt;/li&gt;
+&lt;li&gt;Types mismatch&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;[Verify]&lt;/code&gt; attributes put by Objective Sharpie to be audited manually&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Follow &lt;a href=&#34;https://docs.microsoft.com/en-us/xamarin/cross-platform/macios/binding/binding-types-reference&#34;&gt;Binding types reference&lt;/a&gt; and &lt;a href=&#34;https://docs.microsoft.com/en-us/xamarin/cross-platform/macios/binding/troubleshooting&#34;&gt;Binding troubleshooting&lt;/a&gt; guides by Xamarin to finish the binding code.&lt;/p&gt;
+&lt;p&gt;If needed, you can modify C# class and method names in &lt;code&gt;ApiDefinitions.cs&lt;/code&gt;. Also, don&amp;rsquo;t forget to specify the actual library name and its version in &lt;code&gt;AssemblyInfo.cs&lt;/code&gt; and &lt;code&gt;AssemblyName&lt;/code&gt; property in the csproj file.&lt;/p&gt;
+&lt;p&gt;Once all errors in the binding code are fixed, build the project. At this point you should get a DLL containing a Swift library that can be used in Xamarin.iOS apps: then either create a new NuGet package or reference the binding project directly in your Xamarin.iOS app project.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://mikalaidaronin.info/images/visual-studio-starscream.png&#34; alt=&#34;A DLL opened in Visual Studio&#34;&gt;&lt;/p&gt;
+&lt;h2 id=&#34;4-include-swift-dependencies-into-your-app&#34;&gt;4. Include Swift dependencies into your app&lt;/h2&gt;
+&lt;p&gt;If the target iOS version of your app is lower than 12.2 then additional configuration is required. Xamarin.iOS still does not support Swift runtime, although &lt;a href=&#34;https://github.com/xamarin/binding-tools-for-swift&#34;&gt;some work is going on&lt;/a&gt;. Anyway, if you need to support older iOS versions you need to ship Swift dependencies with your app. There are two projects that can do it for you:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/Flash3001/Xamarin.Swift&#34;&gt;Xamarin.Swift&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/xamarin/XamarinComponents/tree/main/iOS/SwiftRuntimeSupport&#34;&gt;Xamarin.iOS.SwiftRuntimeSupport&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;In my experience both of them work well and both have the same limitation: the Swift libraries are not being copied to the right place when generating the IPA using Visual Studio, causing the rejection of the App Store when uploading the IPA.&lt;/p&gt;
+&lt;p&gt;To be able to generate a valid IPA of a Xamarin.iOS app with Swift dependencies, you  need to use the &lt;strong&gt;Xcode IPA wizard&lt;/strong&gt;.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;In Visual Studio, select a valid iOS device before archiving.&lt;/li&gt;
+&lt;li&gt;Go to &lt;em&gt;Build&lt;/em&gt; menu / &lt;em&gt;Archive for Publishing&lt;/em&gt;&lt;/li&gt;
+&lt;li&gt;Once done, open Xcode and go to &lt;em&gt;Window&lt;/em&gt; / &lt;em&gt;Organizer&lt;/em&gt;&lt;/li&gt;
+&lt;li&gt;Select the &lt;em&gt;Archives&lt;/em&gt; tab&lt;/li&gt;
+&lt;li&gt;On the left side of the window, select your app&lt;/li&gt;
+&lt;li&gt;Click on &lt;em&gt;Distribute App&lt;/em&gt; button and follow the wizard&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;p&gt;N.B. Do not put spaces in the output path of the Xamarin.iOS project (in project name and its path, in configuration names, etc.) to avoid errors like &lt;a href=&#34;https://github.com/Flash3001/Xamarin.Swift/issues/29&#34;&gt;this one&lt;/a&gt;.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;references&#34;&gt;References&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Binding Swift Libraries — Xamarin.iOS | Lucas Teixeira: &lt;a href=&#34;https://medium.com/@Flash3001/binding-swift-libraries-xamarin-ios-ff32adbc7c76&#34;&gt;medium.com&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Running ObjectSharpie agains a framework and getting errors about NSString: &lt;a href=&#34;https://forums.xamarin.com/discussion/81418/running-objectsharpie-agains-a-framework-and-getting-errors-about-nsstring&#34;&gt;forums.xamarin.com&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Mac Catalyst相关报错: &lt;a href=&#34;https://www.jianshu.com/p/8bcea91b1f2d&#34;&gt;jianshu.com&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Objective Sharpie fails with errors originating in the SDK&amp;rsquo;s header files: &lt;a href=&#34;https://stackoverflow.com/questions/32845660/objective-sharpie-fails-with-errors-originating-in-the-sdks-header-files&#34;&gt;stackoverflow.com&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;[ObjectiveSharpie] Unsupported clang availability platform: &amp;lsquo;macCatalyst&amp;rsquo; #7109: &lt;a href=&#34;https://github.com/xamarin/xamarin-macios/issues/7109&#34;&gt;github.com/xamarin&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;MT5212 not reported -&amp;gt; Error MT5216: Native linking failed for libSZCAAuth.dll.dylib&#39; instead #4889: &lt;a href=&#34;https://github.com/xamarin/xamarin-macios/issues/4889&#34;&gt;github.com/xamarin&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description>
+    </item>
+    
+    <item>
+      <title>Using password autofill with Xamarin.Forms</title>
+      <link>https://mikalaidaronin.info/blog/posts/xamarin-forms-password-autofill/</link>
+      <pubDate>Wed, 12 Jun 2019 10:52:04 +0300</pubDate>
+      
+      <guid>https://mikalaidaronin.info/blog/posts/xamarin-forms-password-autofill/</guid>
+      <description>&lt;p&gt;iOS 12 and Android 8 brought a simple and useful feature called &lt;em&gt;the password autofill framework&lt;/em&gt;. Even though integration of this feature doesn&amp;rsquo;t require significant efforts, many Xamarin.Forms applications still haven&amp;rsquo;t adopted this. In this post I&amp;rsquo;ll show you how you can enable the Password Autofill feature for your app with little effort.&lt;/p&gt;
+&lt;h2 id=&#34;autofill-effect&#34;&gt;Autofill effect&lt;/h2&gt;
+&lt;p&gt;Xamarin.Forms.Effect is aт extremely flexible way to get access to native view properties without sub-classing Xamarin.Forms views and writing huge custom renderers. In our case, the Effect would look something like this:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;public class AutofillEffect : RoutingEffect
+{
+    public AutofillContentType Type { get; set; }
+
+    public AutofillEffect() : base(&amp;quot;PasswordAutofillSample.&amp;quot; + nameof(AutofillEffect))
+    {
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;The &lt;code&gt;AutofillContentType&lt;/code&gt; is an enumerable type that lists all the supported autofill entries. In fact, iOS and Android support various types of input fields, including credit card information and even 2FA OTP codes, but in our sample we will only use username and password:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;public enum AutofillContentType
+{
+    None,
+    Username,
+    Password
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Now we can use this effect on our login page. Let&amp;rsquo;s attach them to the username and password entries:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;&amp;lt;Entry
+    Keyboard=&amp;quot;Email&amp;quot;
+    Placeholder=&amp;quot;Email...&amp;quot;&amp;gt;
+    &amp;lt;Entry.Effects&amp;gt;
+        &amp;lt;local:AutofillEffect
+            Type=&amp;quot;Username&amp;quot; /&amp;gt;
+    &amp;lt;/Entry.Effects&amp;gt;
+&amp;lt;/Entry&amp;gt;
+&amp;lt;Entry
+    IsPassword=&amp;quot;true&amp;quot;
+    Placeholder=&amp;quot;Password...&amp;quot;&amp;gt;
+    &amp;lt;Entry.Effects&amp;gt;
+        &amp;lt;local:AutofillEffect
+            Type=&amp;quot;Password&amp;quot; /&amp;gt;
+    &amp;lt;/Entry.Effects&amp;gt;
+&amp;lt;/Entry&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;The platform-specific implementation of the effect is simple and short, however you have to make sure you do not call an API that doesn&amp;rsquo;t exist on this particular platform.&lt;/p&gt;
+&lt;p&gt;iOS effect implementation:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;[assembly: Xamarin.Forms.ResolutionGroupName(&amp;quot;PasswordAutofillSample&amp;quot;)]
+[assembly: Xamarin.Forms.ExportEffect(typeof(AppleAutofillEffect), &amp;quot;AutofillEffect&amp;quot;)]
+...
+public class AppleAutofillEffect : PlatformEffect
+{
+    protected override void OnAttached()
+    {
+        var effect = (AutofillEffect)Element.Effects
+            .FirstOrDefault(e =&amp;gt; e is AutofillEffect);
+        if (effect != null
+            &amp;amp;&amp;amp; UIDevice.CurrentDevice.CheckSystemVersion(11, 0)
+            &amp;amp;&amp;amp; Control is UITextField textField)
+        {
+            switch (effect.Type)
+            {
+                case AutofillContentType.None:
+                    textField.TextContentType = NSString.Empty;
+                    break;
+                case AutofillContentType.Username:
+                    textField.TextContentType = UITextContentType.Username;
+                    break;
+                case AutofillContentType.Password:
+                    textField.TextContentType = UITextContentType.Password;
+                    break;
+            }
+        }
+    }
+
+    protected override void OnDetached()
+    {
+        if (UIDevice.CurrentDevice.CheckSystemVersion(11, 0)
+            &amp;amp;&amp;amp; Control is UITextField textField)
+        {
+            textField.TextContentType = NSString.Empty;
+        }
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Android effect implementation:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;[assembly: Xamarin.Forms.ResolutionGroupName(&amp;quot;PasswordAutofillSample&amp;quot;)]
+[assembly: Xamarin.Forms.ExportEffect(typeof(AndroidAutofillEffect), &amp;quot;AutofillEffect&amp;quot;)]
+...
+public class AndroidAutofillEffect : PlatformEffect
+{
+    protected override void OnAttached()
+    {
+        var effect = (AutofillEffect)Element.Effects
+            .FirstOrDefault(e =&amp;gt; e is AutofillEffect);
+        if (effect != null
+            &amp;amp;&amp;amp; Build.VERSION.SdkInt &amp;gt;= BuildVersionCodes.O
+            &amp;amp;&amp;amp; Control is EditText editText)
+        {
+            editText.ImportantForAutofill = Android.Views.ImportantForAutofill.Yes;
+            switch (effect.Type)
+            {
+                case AutofillContentType.None:
+                    editText.SetAutofillHints(autofillHints: null);
+                    break;
+                case AutofillContentType.Username:
+                    editText.SetAutofillHints(View.AutofillHintUsername);
+                    break;
+                case AutofillContentType.Password:
+                    editText.SetAutofillHints(View.AutofillHintPassword);
+                    break;
+            }
+        }
+    }
+
+    protected override void OnDetached()
+    {
+        if (Build.VERSION.SdkInt &amp;gt;= BuildVersionCodes.O 
+            &amp;amp;&amp;amp; Control is EditText editText)
+        {
+            editText.ImportantForAutofill = ImportantForAutofill.Auto;
+            editText.SetAutofillHints(autofillHints: null);
+        }
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;As for iOS, that&amp;rsquo;s enough!&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://mikalaidaronin.info/images/ios-autofill-workflow.png&#34; alt=&#34;iOS Password Autofill workflow&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;N.B. It is preferable to use a physical iOS device to test it out. If you are on a simulator, go to settings of the simulator → Passwords → turn on AutoFill Passwords.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;As for Android, you need additional code. The Autofill framework automatically detects when the login form is closed, but it can&amp;rsquo;t detect this event on Android. This happens because how Xamarin.Forms is designed under the hood and what the Autofill framework expects to happen.&lt;/p&gt;
+&lt;p&gt;On iOS each Xamarin.Forms.Page instance is basically a separate ViewController, and once the Page is closed, the ViewController is destroyed and the Autofill Framework traits it as expected. However, on Android things are different. Each Xamarin.Forms.Page is a Fragment, and all these fragments exist on a single Activity. Because the Autofill framework expects the Login activity to be destroyed once user logs in and this is not what happens with Xamarin.Forms, we have to call &lt;a href=&#34;https://developer.android.com/reference/android/view/autofill/AutofillManager.html#commit()&#34;&gt;&lt;code&gt;AutofillManager.commit()&lt;/code&gt;&lt;/a&gt; method directly right after the login process finishes:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;Xamarin.Forms.DependencyService.Get&amp;lt;ICrossAutofillManager&amp;gt;().Commit();
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;&lt;code&gt;ICrossAutofillManager&lt;/code&gt; is a simple interface used as a bridge to the native stuff:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;public interface ICrossAutofillManager
+{
+    void Commit();
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;[assembly: Xamarin.Forms.Dependency(typeof(AndroidAutofillManager))]
+...
+public class AndroidAutofillManager : ICrossAutofillManager
+{
+    public void Commit()
+    {
+        if (Build.VERSION.SdkInt &amp;gt;= BuildVersionCodes.O)
+        {
+            var manager = (AutofillManager)Application.Context
+                .GetSystemService(
+                    Java.Lang.Class.FromType(typeof(AutofillManager)));
+            manager.Commit();
+        }
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;After you have added it, compile and run the application. The Password Autofill feature on Android works pretty the same as on iOS:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://mikalaidaronin.info/images/android-autofill-workflow.png&#34; alt=&#34;Android Password Autofill workflow&#34;&gt;&lt;/p&gt;
+&lt;p&gt;We are done! Another great benefit of the Autofill framework is that it can work not only with iCloud but also with third-party password managers: projects such as 1Password &lt;a href=&#34;https://support.1password.com/ios-autofill/&#34;&gt;have adopted&lt;/a&gt; the Password Autofill framework, so you do not force your users to share their credentials with Apple or Google.&lt;/p&gt;
+&lt;h2 id=&#34;domain-association&#34;&gt;Domain association&lt;/h2&gt;
+&lt;p&gt;What we did is fine but it’s still not the maximum what we can achieve. Both platforms provide domain-app credential sharing, which allows users to enter their credentials only once (or even never if password generator is used) and then smoothly log in into your service on any device. So, a user can create an account on Mac using Safari, then download the iOS app and log in into the app just with one tap.&lt;/p&gt;
+&lt;p&gt;In order to achieve it, domain association should be set up. Open &lt;code&gt;Entitlements.plist&lt;/code&gt; file in your Xamarin.iOS project and enable Associated Domains:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://mikalaidaronin.info/images/xamarin.ios-associated-domains.png&#34; alt=&#34;Entitlements editor in VS for Mac&#34;&gt;&lt;/p&gt;
+&lt;p&gt;You also need to enable &amp;ldquo;Associated Domain&amp;rdquo; for your app in the Apple Developer console:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://mikalaidaronin.info/images/apple-associated-domains.png&#34; alt=&#34;Apple Developer Console&#34;&gt;&lt;/p&gt;
+&lt;p&gt;The last step is to prepare the Apple App Site association file. It is just a regular JSON file that you need to put on your server, the file’s URL should match the following format:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;https://&amp;lt;fully qualified domain&amp;gt;/.well-known/apple-app-site-association
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;This file contains a JSON document with a dictionary that lists all applications associated with your domain:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;{
+    &amp;quot;webcredentials&amp;quot;: {
+        &amp;quot;apps&amp;quot;: [ 
+            &amp;quot;&amp;lt;Team Identifier&amp;gt;.&amp;lt;Bundle Identifier&amp;gt;&amp;quot; 
+        ]
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Team Identifier can be obtained from &lt;a href=&#34;https://developer.apple.com/account/#/membership/&#34;&gt;the Apple Developer portal&lt;/a&gt;, Bundle Identifier is set in the &lt;code&gt;Info.plist&lt;/code&gt; file.&lt;/p&gt;
+&lt;p&gt;On Android at first you need to allow credential sharing in the app manifest. Add the following meta-data to the manifest under &lt;code&gt;&amp;lt;application&amp;gt;&lt;/code&gt; tag:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;&amp;lt;manifest
+    ...
+    &amp;lt;application&amp;gt;
+        ...
+        &amp;lt;meta-data android:name=&amp;quot;asset_statements&amp;quot; 
+                   android:resource=&amp;quot;@string/asset_statements&amp;quot; /&amp;gt;
+        ...
+    &amp;lt;/application&amp;gt;
+&amp;lt;/manifest&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Then you need to specify your domain: add a new string resource called &lt;code&gt;asset_statements&lt;/code&gt; with the following content:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;&amp;lt;resources&amp;gt;
+    &amp;lt;string name=&amp;quot;asset_statements&amp;quot; translatable=&amp;quot;false&amp;quot;&amp;gt;
+    [{
+        \&amp;quot;include\&amp;quot;: \&amp;quot;https://example.com/.well-known/assetlinks.json\&amp;quot;
+    }]
+    &amp;lt;/string&amp;gt;
+&amp;lt;/resources&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;The last step with Android application is actually the same what you did with iOS: you need to prepare a special file that is supposed to be accessible from your server. The URL should be:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;https://&amp;lt;fully qualified domain&amp;gt;/.well-known/assetlinks.json
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;And the JSON file content is:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;[
+    {
+        &amp;quot;relation&amp;quot;: [&amp;quot;delegate_permission/common.get_login_creds&amp;quot;],
+        &amp;quot;target&amp;quot;: {
+            &amp;quot;namespace&amp;quot;: &amp;quot;web&amp;quot;,
+            &amp;quot;site&amp;quot;: &amp;quot;https://example.com&amp;quot;
+        }
+    },
+    {
+        &amp;quot;relation&amp;quot;: [&amp;quot;delegate_permission/common.get_login_creds&amp;quot;],
+        &amp;quot;target&amp;quot;: {
+            &amp;quot;namespace&amp;quot;: &amp;quot;android_app&amp;quot;,
+            &amp;quot;package_name&amp;quot;: &amp;quot;com.example&amp;quot;,
+            &amp;quot;sha256_cert_fingerprints&amp;quot;: [ &amp;quot;74:A6:D8:3F:69:48:DE:96:59:40:9E:52:67:82:E7:0F:3F:E1:6B:B5:27:84:1B:2B:07:81:18:4E:2A:C7:3E:3F&amp;quot; ]
+        }
+    }
+]
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;The &lt;code&gt;package_name&lt;/code&gt; property is your app&amp;rsquo;s application ID specified in the manifest file, &lt;code&gt;sha256_cert_fingerprints&lt;/code&gt; is, obviously, the SHA256 fingerprint of your signing certificate. Use the following command to generate the fingerprint:&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;$ keytool -list -v -keystore android.keystore
+Enter keystore password:
+Keystore type: jks
+Keystore provider: SUN
+
+Your keystore contains 1 entry
+
+Alias name: ***
+...
+Certificate fingerprints:
+	 MD5:  F4:4C:94:9B:BE:03:49:D6:BA:49:26:61:43:42:C6:C8
+	 SHA1: D7:A0:A9:4C:CF:5A:5C:8D:66:60:F6:A4:0B:FE:F5:7F:AB:5F:31:AE
+	 SHA256: 74:A6:D8:3F:69:48:DE:96:59:40:9E:52:67:82:E7:0F:3F:E1:6B:B5:27:84:1B:2B:07:81:18:4E:2A:C7:3E:3F
+...
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Once it&amp;rsquo;s done, you have to publish the Android application to the Google Play Store. This step is necessary, and if you don&amp;rsquo;t want to share the application, you can publish it to the limited Alpha channel. The ultimate step is to fill and submit the &lt;a href=&#34;https://docs.google.com/forms/d/1UFsC7aMT5IT02PH9Hpbq0vvGJycShlUAKVp8s0QGb9w/viewform&#34;&gt;Smart Lock for Passwords affiliation form&lt;/a&gt; to request verification from Google.&lt;/p&gt;
+&lt;p&gt;All source code is available on &lt;a href=&#34;https://github.com/lassana/XamarinFormsPasswordAutofill&#34;&gt;Github&lt;/a&gt;.&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;Xamarin.Forms is a great instrument to build mobile apps of various complexity, but, apparently, it will be always missing some &lt;em&gt;native&lt;/em&gt; functionality. Xamarin team did amazing work providing developers an easy access to the native things, and hopefully, using them and reading this post you have achieved what you wanted.&lt;/p&gt;
+&lt;p&gt;Take care.&lt;/p&gt;
+&lt;h2 id=&#34;further-reading&#34;&gt;Further reading:&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Password AutoFill | Apple Developer Documentation: &lt;a href=&#34;https://developer.apple.com/documentation/security/password_autofill/&#34;&gt;developer.apple.com&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Autofill framework | Android Developers: &lt;a href=&#34;https://developer.android.com/guide/topics/text/autofill&#34;&gt;developer.android.com&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Autofilling new password with confirmation in iOS 12: &lt;a href=&#34;https://stackoverflow.com/questions/51946103/autofilling-new-password-with-confirmation-in-ios-12&#34;&gt;stackoverflow.com&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</description>
+    </item>
+    
+  </channel>
+</rss>

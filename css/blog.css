@@ -1,0 +1,140 @@
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover, .custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+body {
+  background-color: #fdfdfd;
+}
+
+body {
+  color: #404040;
+}
+
+a {
+  color: #007bff;
+}
+
+a:hover, a:focus {
+  color: #008AFF;
+}
+
+.custom-navbar {
+  background-color: #32363A;
+}
+
+.custom-navbar a {
+  color: #F9F9F9;
+}
+
+.custom-navbar a:hover, .custom-navbar a:focus {
+  color: #C7CBC6;
+}
+
+.container {
+  max-width: 800px;
+}
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #ededed;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: #404040;
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: #404040;
+  background-color: #ededed;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+blockquote, .blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+.list-post-title {
+  font-size:2.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  /* Dark theme based on Dracula https://draculatheme.com/contribute#color-palette */
+  body {
+    background-color: #1e1f29;
+    color: #f8f8f2;
+  }
+  a {
+    color: #ff79c6;
+  }
+  a:hover, a:focus {
+    color: #af4a89;
+  }
+  .custom-navbar {
+    background-color: #282A36;
+  }
+  .custom-navbar a {
+    color: #ff79c6;
+  }
+  .custom-navbar a:hover, .custom-navbar a:focus {
+    color: #af4a89;
+  }
+  pre {
+    border: 1px solid #6272a4;
+    background-color: #44475a;
+  }
+  pre code {
+    color: #f8f8f2;
+  }
+  code {
+    background-color: #44475a;
+    color: #f8f8f2;
+    border: 1px solid #6272a4;
+  }
+}

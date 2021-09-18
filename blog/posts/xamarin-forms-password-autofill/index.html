@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  
+  <meta name="description" content="Mikalai Daronin">
+  
+
+  
+  
+  <link rel="stylesheet" href="https://mikalaidaronin.info/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://mikalaidaronin.info/css/blog.css" />
+
+  
+  <title>Using password autofill with Xamarin.Forms | MikalaiDaronin.info</title>
+  
+
+  <style>
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="https://mikalaidaronin.info/blog">Posts</a>
+    
+    <a href="https://mikalaidaronin.info/blog/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Using password autofill with Xamarin.Forms</h1>
+<p><small class="text-secondary">
+
+
+June 12, 2019
+</small>
+
+<small><code><a href="https://mikalaidaronin.info/blog/tags/xamarin">xamarin</a></code></small>
+</p>
+<p>iOS 12 and Android 8 brought a simple and useful feature called <em>the password autofill framework</em>. Even though integration of this feature doesn&rsquo;t require significant efforts, many Xamarin.Forms applications still haven&rsquo;t adopted this. In this post I&rsquo;ll show you how you can enable the Password Autofill feature for your app with little effort.</p>
+<h2 id="autofill-effect">Autofill effect</h2>
+<p>Xamarin.Forms.Effect is aт extremely flexible way to get access to native view properties without sub-classing Xamarin.Forms views and writing huge custom renderers. In our case, the Effect would look something like this:</p>
+<pre tabindex="0"><code>public class AutofillEffect : RoutingEffect
+{
+    public AutofillContentType Type { get; set; }
+
+    public AutofillEffect() : base(&quot;PasswordAutofillSample.&quot; + nameof(AutofillEffect))
+    {
+    }
+}
+</code></pre><p>The <code>AutofillContentType</code> is an enumerable type that lists all the supported autofill entries. In fact, iOS and Android support various types of input fields, including credit card information and even 2FA OTP codes, but in our sample we will only use username and password:</p>
+<pre tabindex="0"><code>public enum AutofillContentType
+{
+    None,
+    Username,
+    Password
+}
+</code></pre><p>Now we can use this effect on our login page. Let&rsquo;s attach them to the username and password entries:</p>
+<pre tabindex="0"><code>&lt;Entry
+    Keyboard=&quot;Email&quot;
+    Placeholder=&quot;Email...&quot;&gt;
+    &lt;Entry.Effects&gt;
+        &lt;local:AutofillEffect
+            Type=&quot;Username&quot; /&gt;
+    &lt;/Entry.Effects&gt;
+&lt;/Entry&gt;
+&lt;Entry
+    IsPassword=&quot;true&quot;
+    Placeholder=&quot;Password...&quot;&gt;
+    &lt;Entry.Effects&gt;
+        &lt;local:AutofillEffect
+            Type=&quot;Password&quot; /&gt;
+    &lt;/Entry.Effects&gt;
+&lt;/Entry&gt;
+</code></pre><p>The platform-specific implementation of the effect is simple and short, however you have to make sure you do not call an API that doesn&rsquo;t exist on this particular platform.</p>
+<p>iOS effect implementation:</p>
+<pre tabindex="0"><code>[assembly: Xamarin.Forms.ResolutionGroupName(&quot;PasswordAutofillSample&quot;)]
+[assembly: Xamarin.Forms.ExportEffect(typeof(AppleAutofillEffect), &quot;AutofillEffect&quot;)]
+...
+public class AppleAutofillEffect : PlatformEffect
+{
+    protected override void OnAttached()
+    {
+        var effect = (AutofillEffect)Element.Effects
+            .FirstOrDefault(e =&gt; e is AutofillEffect);
+        if (effect != null
+            &amp;&amp; UIDevice.CurrentDevice.CheckSystemVersion(11, 0)
+            &amp;&amp; Control is UITextField textField)
+        {
+            switch (effect.Type)
+            {
+                case AutofillContentType.None:
+                    textField.TextContentType = NSString.Empty;
+                    break;
+                case AutofillContentType.Username:
+                    textField.TextContentType = UITextContentType.Username;
+                    break;
+                case AutofillContentType.Password:
+                    textField.TextContentType = UITextContentType.Password;
+                    break;
+            }
+        }
+    }
+
+    protected override void OnDetached()
+    {
+        if (UIDevice.CurrentDevice.CheckSystemVersion(11, 0)
+            &amp;&amp; Control is UITextField textField)
+        {
+            textField.TextContentType = NSString.Empty;
+        }
+    }
+}
+</code></pre><p>Android effect implementation:</p>
+<pre tabindex="0"><code>[assembly: Xamarin.Forms.ResolutionGroupName(&quot;PasswordAutofillSample&quot;)]
+[assembly: Xamarin.Forms.ExportEffect(typeof(AndroidAutofillEffect), &quot;AutofillEffect&quot;)]
+...
+public class AndroidAutofillEffect : PlatformEffect
+{
+    protected override void OnAttached()
+    {
+        var effect = (AutofillEffect)Element.Effects
+            .FirstOrDefault(e =&gt; e is AutofillEffect);
+        if (effect != null
+            &amp;&amp; Build.VERSION.SdkInt &gt;= BuildVersionCodes.O
+            &amp;&amp; Control is EditText editText)
+        {
+            editText.ImportantForAutofill = Android.Views.ImportantForAutofill.Yes;
+            switch (effect.Type)
+            {
+                case AutofillContentType.None:
+                    editText.SetAutofillHints(autofillHints: null);
+                    break;
+                case AutofillContentType.Username:
+                    editText.SetAutofillHints(View.AutofillHintUsername);
+                    break;
+                case AutofillContentType.Password:
+                    editText.SetAutofillHints(View.AutofillHintPassword);
+                    break;
+            }
+        }
+    }
+
+    protected override void OnDetached()
+    {
+        if (Build.VERSION.SdkInt &gt;= BuildVersionCodes.O 
+            &amp;&amp; Control is EditText editText)
+        {
+            editText.ImportantForAutofill = ImportantForAutofill.Auto;
+            editText.SetAutofillHints(autofillHints: null);
+        }
+    }
+}
+</code></pre><p>As for iOS, that&rsquo;s enough!</p>
+<p><img src="https://mikalaidaronin.info/images/ios-autofill-workflow.png" alt="iOS Password Autofill workflow"></p>
+<p><em>N.B. It is preferable to use a physical iOS device to test it out. If you are on a simulator, go to settings of the simulator → Passwords → turn on AutoFill Passwords.</em></p>
+<p>As for Android, you need additional code. The Autofill framework automatically detects when the login form is closed, but it can&rsquo;t detect this event on Android. This happens because how Xamarin.Forms is designed under the hood and what the Autofill framework expects to happen.</p>
+<p>On iOS each Xamarin.Forms.Page instance is basically a separate ViewController, and once the Page is closed, the ViewController is destroyed and the Autofill Framework traits it as expected. However, on Android things are different. Each Xamarin.Forms.Page is a Fragment, and all these fragments exist on a single Activity. Because the Autofill framework expects the Login activity to be destroyed once user logs in and this is not what happens with Xamarin.Forms, we have to call <a href="https://developer.android.com/reference/android/view/autofill/AutofillManager.html#commit()"><code>AutofillManager.commit()</code></a> method directly right after the login process finishes:</p>
+<pre tabindex="0"><code>Xamarin.Forms.DependencyService.Get&lt;ICrossAutofillManager&gt;().Commit();
+</code></pre><p><code>ICrossAutofillManager</code> is a simple interface used as a bridge to the native stuff:</p>
+<pre tabindex="0"><code>public interface ICrossAutofillManager
+{
+    void Commit();
+}
+</code></pre><pre tabindex="0"><code>[assembly: Xamarin.Forms.Dependency(typeof(AndroidAutofillManager))]
+...
+public class AndroidAutofillManager : ICrossAutofillManager
+{
+    public void Commit()
+    {
+        if (Build.VERSION.SdkInt &gt;= BuildVersionCodes.O)
+        {
+            var manager = (AutofillManager)Application.Context
+                .GetSystemService(
+                    Java.Lang.Class.FromType(typeof(AutofillManager)));
+            manager.Commit();
+        }
+    }
+}
+</code></pre><p>After you have added it, compile and run the application. The Password Autofill feature on Android works pretty the same as on iOS:</p>
+<p><img src="https://mikalaidaronin.info/images/android-autofill-workflow.png" alt="Android Password Autofill workflow"></p>
+<p>We are done! Another great benefit of the Autofill framework is that it can work not only with iCloud but also with third-party password managers: projects such as 1Password <a href="https://support.1password.com/ios-autofill/">have adopted</a> the Password Autofill framework, so you do not force your users to share their credentials with Apple or Google.</p>
+<h2 id="domain-association">Domain association</h2>
+<p>What we did is fine but it’s still not the maximum what we can achieve. Both platforms provide domain-app credential sharing, which allows users to enter their credentials only once (or even never if password generator is used) and then smoothly log in into your service on any device. So, a user can create an account on Mac using Safari, then download the iOS app and log in into the app just with one tap.</p>
+<p>In order to achieve it, domain association should be set up. Open <code>Entitlements.plist</code> file in your Xamarin.iOS project and enable Associated Domains:</p>
+<p><img src="https://mikalaidaronin.info/images/xamarin.ios-associated-domains.png" alt="Entitlements editor in VS for Mac"></p>
+<p>You also need to enable &ldquo;Associated Domain&rdquo; for your app in the Apple Developer console:</p>
+<p><img src="https://mikalaidaronin.info/images/apple-associated-domains.png" alt="Apple Developer Console"></p>
+<p>The last step is to prepare the Apple App Site association file. It is just a regular JSON file that you need to put on your server, the file’s URL should match the following format:</p>
+<pre tabindex="0"><code>https://&lt;fully qualified domain&gt;/.well-known/apple-app-site-association
+</code></pre><p>This file contains a JSON document with a dictionary that lists all applications associated with your domain:</p>
+<pre tabindex="0"><code>{
+    &quot;webcredentials&quot;: {
+        &quot;apps&quot;: [ 
+            &quot;&lt;Team Identifier&gt;.&lt;Bundle Identifier&gt;&quot; 
+        ]
+    }
+}
+</code></pre><p>Team Identifier can be obtained from <a href="https://developer.apple.com/account/#/membership/">the Apple Developer portal</a>, Bundle Identifier is set in the <code>Info.plist</code> file.</p>
+<p>On Android at first you need to allow credential sharing in the app manifest. Add the following meta-data to the manifest under <code>&lt;application&gt;</code> tag:</p>
+<pre tabindex="0"><code>&lt;manifest
+    ...
+    &lt;application&gt;
+        ...
+        &lt;meta-data android:name=&quot;asset_statements&quot; 
+                   android:resource=&quot;@string/asset_statements&quot; /&gt;
+        ...
+    &lt;/application&gt;
+&lt;/manifest&gt;
+</code></pre><p>Then you need to specify your domain: add a new string resource called <code>asset_statements</code> with the following content:</p>
+<pre tabindex="0"><code>&lt;resources&gt;
+    &lt;string name=&quot;asset_statements&quot; translatable=&quot;false&quot;&gt;
+    [{
+        \&quot;include\&quot;: \&quot;https://example.com/.well-known/assetlinks.json\&quot;
+    }]
+    &lt;/string&gt;
+&lt;/resources&gt;
+</code></pre><p>The last step with Android application is actually the same what you did with iOS: you need to prepare a special file that is supposed to be accessible from your server. The URL should be:</p>
+<pre tabindex="0"><code>https://&lt;fully qualified domain&gt;/.well-known/assetlinks.json
+</code></pre><p>And the JSON file content is:</p>
+<pre tabindex="0"><code>[
+    {
+        &quot;relation&quot;: [&quot;delegate_permission/common.get_login_creds&quot;],
+        &quot;target&quot;: {
+            &quot;namespace&quot;: &quot;web&quot;,
+            &quot;site&quot;: &quot;https://example.com&quot;
+        }
+    },
+    {
+        &quot;relation&quot;: [&quot;delegate_permission/common.get_login_creds&quot;],
+        &quot;target&quot;: {
+            &quot;namespace&quot;: &quot;android_app&quot;,
+            &quot;package_name&quot;: &quot;com.example&quot;,
+            &quot;sha256_cert_fingerprints&quot;: [ &quot;74:A6:D8:3F:69:48:DE:96:59:40:9E:52:67:82:E7:0F:3F:E1:6B:B5:27:84:1B:2B:07:81:18:4E:2A:C7:3E:3F&quot; ]
+        }
+    }
+]
+</code></pre><p>The <code>package_name</code> property is your app&rsquo;s application ID specified in the manifest file, <code>sha256_cert_fingerprints</code> is, obviously, the SHA256 fingerprint of your signing certificate. Use the following command to generate the fingerprint:</p>
+<pre tabindex="0"><code>$ keytool -list -v -keystore android.keystore
+Enter keystore password:
+Keystore type: jks
+Keystore provider: SUN
+
+Your keystore contains 1 entry
+
+Alias name: ***
+...
+Certificate fingerprints:
+	 MD5:  F4:4C:94:9B:BE:03:49:D6:BA:49:26:61:43:42:C6:C8
+	 SHA1: D7:A0:A9:4C:CF:5A:5C:8D:66:60:F6:A4:0B:FE:F5:7F:AB:5F:31:AE
+	 SHA256: 74:A6:D8:3F:69:48:DE:96:59:40:9E:52:67:82:E7:0F:3F:E1:6B:B5:27:84:1B:2B:07:81:18:4E:2A:C7:3E:3F
+...
+</code></pre><p>Once it&rsquo;s done, you have to publish the Android application to the Google Play Store. This step is necessary, and if you don&rsquo;t want to share the application, you can publish it to the limited Alpha channel. The ultimate step is to fill and submit the <a href="https://docs.google.com/forms/d/1UFsC7aMT5IT02PH9Hpbq0vvGJycShlUAKVp8s0QGb9w/viewform">Smart Lock for Passwords affiliation form</a> to request verification from Google.</p>
+<p>All source code is available on <a href="https://github.com/lassana/XamarinFormsPasswordAutofill">Github</a>.</p>
+<hr>
+<p>Xamarin.Forms is a great instrument to build mobile apps of various complexity, but, apparently, it will be always missing some <em>native</em> functionality. Xamarin team did amazing work providing developers an easy access to the native things, and hopefully, using them and reading this post you have achieved what you wanted.</p>
+<p>Take care.</p>
+<h2 id="further-reading">Further reading:</h2>
+<ul>
+<li>Password AutoFill | Apple Developer Documentation: <a href="https://developer.apple.com/documentation/security/password_autofill/">developer.apple.com</a></li>
+<li>Autofill framework | Android Developers: <a href="https://developer.android.com/guide/topics/text/autofill">developer.android.com</a></li>
+<li>Autofilling new password with confirmation in iOS 12: <a href="https://stackoverflow.com/questions/51946103/autofilling-new-password-with-confirmation-in-ios-12">stackoverflow.com</a></li>
+</ul>
+    </article>
+  </div>
+
+  
+  
+</body>
+
+</html>

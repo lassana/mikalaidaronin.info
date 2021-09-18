@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  
+  <meta name="description" content="Mikalai Daronin">
+  
+
+  
+  
+  <link rel="stylesheet" href="https://mikalaidaronin.info/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://mikalaidaronin.info/css/blog.css" />
+
+  
+  <title>Binding Swift Libraries in Xamarin.iOS | MikalaiDaronin.info</title>
+  
+
+  <style>
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="https://mikalaidaronin.info/blog">Posts</a>
+    
+    <a href="https://mikalaidaronin.info/blog/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Binding Swift Libraries in Xamarin.iOS</h1>
+<p><small class="text-secondary">
+
+
+February 11, 2020
+</small>
+
+<small><code><a href="https://mikalaidaronin.info/blog/tags/xamarin">xamarin</a></code></small>
+</p>
+<p>There are plenty of guides and blog posts online describing the process of making Xamarin binding for a Swift library, but I&rsquo;ve been always struggling dealing with endless amount of new and new errors. The steps below is a real-world example of binding <a href="https://github.com/daltoniam/Starscream">Starscream library</a> (websockets in Swift for iOS and OSX).</p>
+<p>Binding Swift libraries is pretty much the same as binding Objective-C code as described in the <a href="https://docs.microsoft.com/en-us/xamarin/cross-platform/macios/binding/objective-c-libraries?tabs=macos">&ldquo;Binding Objective-C libraries&rdquo;</a> guide, with a few limitations:</p>
+<ol>
+<li>Swift classes must inherit from <code>NSObject</code>, i.e. they must be accessible from Objective-C. Swift code which is not accessible from Objective-C is also not accessible from Xamarin.</li>
+<li>When supporting iOS 12.1 and older, Swift dylibs must be included in the app package.</li>
+<li>Ideally, Swift classes should be marked with <code>@objc</code> annotation. Otherwise Swift compiler creates its internal class and protocol names like <code>_TtC10Starscream16FoundationStream</code>.</li>
+</ol>
+<h2 id="1-prepare-your-xcode-swift-project">1. Prepare your Xcode Swift project</h2>
+<p>As the first step, the Swift project needs to be opened in Xcode and prepared for build.</p>
+<blockquote>
+<p><a href="https://github.com/mono/Embeddinator-4000/issues/698#issuecomment-418273196">Xamarin.iOS currently only supports bitcode for watchOS and tvOS, not iOS</a>. Since Apple requires all libraries to support the same architectures, you need to disable Bitcode in the Xcode project. Go to your target&rsquo;s Build Settings -&gt; Set Enable Bitcode to &ldquo;No&rdquo;.</p>
+</blockquote>
+<p>Set Build Configuration to <strong>Release</strong>:</p>
+<p><img src="https://mikalaidaronin.info/images/xcode-build-configuration.png" alt="Xcode screenshot"></p>
+<p>Set the active architecture to &ldquo;Generic iOS device&rdquo; and select Product → Build For → Running in the Xcode menu bar. Next, set the active architecture to any simulator and build the target again.</p>
+<p>If you are on macOS Mojave 10.14 or below, you might see the following error when trying to build the Xcode project:</p>
+<pre tabindex="0"><code>error: Building for Mac Catalyst requires macOS 10.15 or later. (in target 'targetA' from project 'targetB')
+</code></pre><p>Go to the target Build Settings in Xcode and change <code>Supports Mac Catalyst</code> property to <code>No</code>:</p>
+<p><img src="https://mikalaidaronin.info/images/xcode-supports-mac-catalyst.png" alt="Xcode screenshot"></p>
+<p>Locate <code>Release-iphoneos</code> and <code>Release-iphonesimulator</code> by choosing &ldquo;Show in Finder&rdquo; in the context menu of your target product. There directories are exactly what you need in the next steps.</p>
+<p><img src="https://mikalaidaronin.info/images/xcode-build-products.png" alt="Finder screenshot"></p>
+<h2 id="2-build-a-fat-framework">2. Build a &ldquo;fat&rdquo; framework</h2>
+<p>Create a new directory named <code>Starscream.framework</code> next to <code>Release-iphoneos</code> and <code>Release-iphonesimulator</code> and copy all the content of <code>Release-iphoneos</code> into it:</p>
+<pre tabindex="0"><code>$ mkdir Starscream.framework
+$ cp -a Release-iphoneos/Starscream.framework/. Starscream.framework/
+</code></pre><p>Create a &ldquo;fat&rdquo; binary that will include code for the four architectures: <code>x86_64</code>, <code>i386</code>, <code>armv7</code>, and <code>arm64</code>.</p>
+<pre tabindex="0"><code>$ lipo -create \
+ Release-iphonesimulator/Starscream.framework/Starscream \
+ Release-iphoneos/Starscream.framework/Starscream \
+ -output Starscream.framework/Starscream
+</code></pre><p>Verify that the binary contains all required architectures:</p>
+<pre tabindex="0"><code>$ lipo -info Starscream.framework/Starscream
+Architectures in the fat file: Starscream.framework/Starscream are: i386 x86_64 armv7 arm64
+</code></pre><p>As a result, you should have a binary framework ready to use in Xamarin:</p>
+<p><img src="https://mikalaidaronin.info/images/starscream.framework.png" alt="Starscream.framework"></p>
+<p><code>Release-iphoneos</code> and <code>Release-iphonesimulator</code> directories are no longer required, you can safely delete them.</p>
+<h2 id="3-create-c-bindings-apidefinitionscs--structscs">3. Create C# bindings (ApiDefinitions.cs &amp; Structs.cs)</h2>
+<p>First of all, get <a href="http://aka.ms/objective-sharpie">the latest version</a> of Objective Sharpie. The current &ldquo;stable&rdquo; version is 3.4.0 which is quite obsolete and it <a href="https://github.com/xamarin/xamarin-macios/issues/7109">doesn&rsquo;t support</a> Xcode 11 and iOS 13 SDK.</p>
+<p>Once Objective Sharpie is installed, run the binding command:</p>
+<pre tabindex="0"><code>$ sharpie bind \
+ -namespace Starscream \
+ -sdk iphoneos13.2 \
+ Starscream.framework/Headers/*.h \
+ -scope Starscream.framework/Headers \
+ -c -F Starscream.framework/
+</code></pre><p>Objective Sharpie will generate one or two files: <code>ApiDefinitions.cs</code> containing the actual binding code, and potentially <code>Structs.cs</code>, if there is an enumeration in the source code.</p>
+<p>At this step, create a new Xamarin.iOS biding project in Visual Studio and copy <code>ApiDefinitions.cs</code> and <code>Structs.cs</code> along with <code>Starscream.framework</code> directory into the project. The <code>csproj</code> file of the binding project should look something like this:</p>
+<pre tabindex="0"><code>...
+  &lt;ItemGroup&gt;
+    &lt;ObjcBindingApiDefinition Include=&quot;ApiDefinition.cs&quot; /&gt;
+  &lt;/ItemGroup&gt;
+  &lt;ItemGroup&gt;
+    &lt;ObjcBindingCoreSource Include=&quot;Structs.cs&quot; /&gt;
+  &lt;/ItemGroup&gt;
+  &lt;ItemGroup&gt;
+    &lt;NativeReference Include=&quot;Starscream.framework&quot;&gt;
+      &lt;Kind&gt;Framework&lt;/Kind&gt;
+      &lt;SmartLink&gt;False&lt;/SmartLink&gt;
+    &lt;/NativeReference&gt;
+  &lt;/ItemGroup&gt;
+...
+</code></pre><p>As the next step, you have to manually verify binding code and fix all the issues Objective Sharpie failed to solve on its own. Common errors are:</p>
+<ul>
+<li>Missing base types</li>
+<li>Missing namespace imports</li>
+<li>Types mismatch</li>
+<li><code>[Verify]</code> attributes put by Objective Sharpie to be audited manually</li>
+</ul>
+<p>Follow <a href="https://docs.microsoft.com/en-us/xamarin/cross-platform/macios/binding/binding-types-reference">Binding types reference</a> and <a href="https://docs.microsoft.com/en-us/xamarin/cross-platform/macios/binding/troubleshooting">Binding troubleshooting</a> guides by Xamarin to finish the binding code.</p>
+<p>If needed, you can modify C# class and method names in <code>ApiDefinitions.cs</code>. Also, don&rsquo;t forget to specify the actual library name and its version in <code>AssemblyInfo.cs</code> and <code>AssemblyName</code> property in the csproj file.</p>
+<p>Once all errors in the binding code are fixed, build the project. At this point you should get a DLL containing a Swift library that can be used in Xamarin.iOS apps: then either create a new NuGet package or reference the binding project directly in your Xamarin.iOS app project.</p>
+<p><img src="https://mikalaidaronin.info/images/visual-studio-starscream.png" alt="A DLL opened in Visual Studio"></p>
+<h2 id="4-include-swift-dependencies-into-your-app">4. Include Swift dependencies into your app</h2>
+<p>If the target iOS version of your app is lower than 12.2 then additional configuration is required. Xamarin.iOS still does not support Swift runtime, although <a href="https://github.com/xamarin/binding-tools-for-swift">some work is going on</a>. Anyway, if you need to support older iOS versions you need to ship Swift dependencies with your app. There are two projects that can do it for you:</p>
+<ul>
+<li><a href="https://github.com/Flash3001/Xamarin.Swift">Xamarin.Swift</a></li>
+<li><a href="https://github.com/xamarin/XamarinComponents/tree/main/iOS/SwiftRuntimeSupport">Xamarin.iOS.SwiftRuntimeSupport</a></li>
+</ul>
+<p>In my experience both of them work well and both have the same limitation: the Swift libraries are not being copied to the right place when generating the IPA using Visual Studio, causing the rejection of the App Store when uploading the IPA.</p>
+<p>To be able to generate a valid IPA of a Xamarin.iOS app with Swift dependencies, you  need to use the <strong>Xcode IPA wizard</strong>.</p>
+<ol>
+<li>In Visual Studio, select a valid iOS device before archiving.</li>
+<li>Go to <em>Build</em> menu / <em>Archive for Publishing</em></li>
+<li>Once done, open Xcode and go to <em>Window</em> / <em>Organizer</em></li>
+<li>Select the <em>Archives</em> tab</li>
+<li>On the left side of the window, select your app</li>
+<li>Click on <em>Distribute App</em> button and follow the wizard</li>
+</ol>
+<blockquote>
+<p>N.B. Do not put spaces in the output path of the Xamarin.iOS project (in project name and its path, in configuration names, etc.) to avoid errors like <a href="https://github.com/Flash3001/Xamarin.Swift/issues/29">this one</a>.</p>
+</blockquote>
+<h2 id="references">References</h2>
+<ul>
+<li>Binding Swift Libraries — Xamarin.iOS | Lucas Teixeira: <a href="https://medium.com/@Flash3001/binding-swift-libraries-xamarin-ios-ff32adbc7c76">medium.com</a></li>
+<li>Running ObjectSharpie agains a framework and getting errors about NSString: <a href="https://forums.xamarin.com/discussion/81418/running-objectsharpie-agains-a-framework-and-getting-errors-about-nsstring">forums.xamarin.com</a></li>
+<li>Mac Catalyst相关报错: <a href="https://www.jianshu.com/p/8bcea91b1f2d">jianshu.com</a></li>
+<li>Objective Sharpie fails with errors originating in the SDK&rsquo;s header files: <a href="https://stackoverflow.com/questions/32845660/objective-sharpie-fails-with-errors-originating-in-the-sdks-header-files">stackoverflow.com</a></li>
+<li>[ObjectiveSharpie] Unsupported clang availability platform: &lsquo;macCatalyst&rsquo; #7109: <a href="https://github.com/xamarin/xamarin-macios/issues/7109">github.com/xamarin</a></li>
+<li>MT5212 not reported -&gt; Error MT5216: Native linking failed for libSZCAAuth.dll.dylib' instead #4889: <a href="https://github.com/xamarin/xamarin-macios/issues/4889">github.com/xamarin</a></li>
+</ul>
+    </article>
+  </div>
+
+  
+  
+</body>
+
+</html>
