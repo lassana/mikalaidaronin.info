@@ -61,7 +61,7 @@ February 11, 2020
 <p><img src="https://mikalaidaronin.info/images/xcode-build-configuration.png" alt="Xcode screenshot"></p>
 <p>Set the active architecture to &ldquo;Generic iOS device&rdquo; and select Product → Build For → Running in the Xcode menu bar. Next, set the active architecture to any simulator and build the target again.</p>
 <p>If you are on macOS Mojave 10.14 or below, you might see the following error when trying to build the Xcode project:</p>
-<pre tabindex="0"><code>error: Building for Mac Catalyst requires macOS 10.15 or later. (in target 'targetA' from project 'targetB')
+<pre tabindex="0"><code>error: Building for Mac Catalyst requires macOS 10.15 or later. (in target &#39;targetA&#39; from project &#39;targetB&#39;)
 </code></pre><p>Go to the target Build Settings in Xcode and change <code>Supports Mac Catalyst</code> property to <code>No</code>:</p>
 <p><img src="https://mikalaidaronin.info/images/xcode-supports-mac-catalyst.png" alt="Xcode screenshot"></p>
 <p>Locate <code>Release-iphoneos</code> and <code>Release-iphonesimulator</code> by choosing &ldquo;Show in Finder&rdquo; in the context menu of your target product. There directories are exactly what you need in the next steps.</p>
@@ -94,13 +94,13 @@ Architectures in the fat file: Starscream.framework/Starscream are: i386 x86_64 
 <p>At this step, create a new Xamarin.iOS biding project in Visual Studio and copy <code>ApiDefinitions.cs</code> and <code>Structs.cs</code> along with <code>Starscream.framework</code> directory into the project. The <code>csproj</code> file of the binding project should look something like this:</p>
 <pre tabindex="0"><code>...
   &lt;ItemGroup&gt;
-    &lt;ObjcBindingApiDefinition Include=&quot;ApiDefinition.cs&quot; /&gt;
+    &lt;ObjcBindingApiDefinition Include=&#34;ApiDefinition.cs&#34; /&gt;
   &lt;/ItemGroup&gt;
   &lt;ItemGroup&gt;
-    &lt;ObjcBindingCoreSource Include=&quot;Structs.cs&quot; /&gt;
+    &lt;ObjcBindingCoreSource Include=&#34;Structs.cs&#34; /&gt;
   &lt;/ItemGroup&gt;
   &lt;ItemGroup&gt;
-    &lt;NativeReference Include=&quot;Starscream.framework&quot;&gt;
+    &lt;NativeReference Include=&#34;Starscream.framework&#34;&gt;
       &lt;Kind&gt;Framework&lt;/Kind&gt;
       &lt;SmartLink&gt;False&lt;/SmartLink&gt;
     &lt;/NativeReference&gt;
@@ -143,7 +143,7 @@ Architectures in the fat file: Starscream.framework/Starscream are: i386 x86_64 
 <li>Mac Catalyst相关报错: <a href="https://www.jianshu.com/p/8bcea91b1f2d">jianshu.com</a></li>
 <li>Objective Sharpie fails with errors originating in the SDK&rsquo;s header files: <a href="https://stackoverflow.com/questions/32845660/objective-sharpie-fails-with-errors-originating-in-the-sdks-header-files">stackoverflow.com</a></li>
 <li>[ObjectiveSharpie] Unsupported clang availability platform: &lsquo;macCatalyst&rsquo; #7109: <a href="https://github.com/xamarin/xamarin-macios/issues/7109">github.com/xamarin</a></li>
-<li>MT5212 not reported -&gt; Error MT5216: Native linking failed for libSZCAAuth.dll.dylib' instead #4889: <a href="https://github.com/xamarin/xamarin-macios/issues/4889">github.com/xamarin</a></li>
+<li>MT5212 not reported -&gt; Error MT5216: Native linking failed for libSZCAAuth.dll.dylib&rsquo; instead #4889: <a href="https://github.com/xamarin/xamarin-macios/issues/4889">github.com/xamarin</a></li>
 </ul>
     </article>
   </div>

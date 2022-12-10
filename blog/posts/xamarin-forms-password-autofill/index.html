@@ -52,7 +52,7 @@ June 12, 2019
 {
     public AutofillContentType Type { get; set; }
 
-    public AutofillEffect() : base(&quot;PasswordAutofillSample.&quot; + nameof(AutofillEffect))
+    public AutofillEffect() : base(&#34;PasswordAutofillSample.&#34; + nameof(AutofillEffect))
     {
     }
 }
@@ -65,25 +65,25 @@ June 12, 2019
 }
 </code></pre><p>Now we can use this effect on our login page. Let&rsquo;s attach them to the username and password entries:</p>
 <pre tabindex="0"><code>&lt;Entry
-    Keyboard=&quot;Email&quot;
-    Placeholder=&quot;Email...&quot;&gt;
+    Keyboard=&#34;Email&#34;
+    Placeholder=&#34;Email...&#34;&gt;
     &lt;Entry.Effects&gt;
         &lt;local:AutofillEffect
-            Type=&quot;Username&quot; /&gt;
+            Type=&#34;Username&#34; /&gt;
     &lt;/Entry.Effects&gt;
 &lt;/Entry&gt;
 &lt;Entry
-    IsPassword=&quot;true&quot;
-    Placeholder=&quot;Password...&quot;&gt;
+    IsPassword=&#34;true&#34;
+    Placeholder=&#34;Password...&#34;&gt;
     &lt;Entry.Effects&gt;
         &lt;local:AutofillEffect
-            Type=&quot;Password&quot; /&gt;
+            Type=&#34;Password&#34; /&gt;
     &lt;/Entry.Effects&gt;
 &lt;/Entry&gt;
 </code></pre><p>The platform-specific implementation of the effect is simple and short, however you have to make sure you do not call an API that doesn&rsquo;t exist on this particular platform.</p>
 <p>iOS effect implementation:</p>
-<pre tabindex="0"><code>[assembly: Xamarin.Forms.ResolutionGroupName(&quot;PasswordAutofillSample&quot;)]
-[assembly: Xamarin.Forms.ExportEffect(typeof(AppleAutofillEffect), &quot;AutofillEffect&quot;)]
+<pre tabindex="0"><code>[assembly: Xamarin.Forms.ResolutionGroupName(&#34;PasswordAutofillSample&#34;)]
+[assembly: Xamarin.Forms.ExportEffect(typeof(AppleAutofillEffect), &#34;AutofillEffect&#34;)]
 ...
 public class AppleAutofillEffect : PlatformEffect
 {
@@ -120,8 +120,8 @@ public class AppleAutofillEffect : PlatformEffect
     }
 }
 </code></pre><p>Android effect implementation:</p>
-<pre tabindex="0"><code>[assembly: Xamarin.Forms.ResolutionGroupName(&quot;PasswordAutofillSample&quot;)]
-[assembly: Xamarin.Forms.ExportEffect(typeof(AndroidAutofillEffect), &quot;AutofillEffect&quot;)]
+<pre tabindex="0"><code>[assembly: Xamarin.Forms.ResolutionGroupName(&#34;PasswordAutofillSample&#34;)]
+[assembly: Xamarin.Forms.ExportEffect(typeof(AndroidAutofillEffect), &#34;AutofillEffect&#34;)]
 ...
 public class AndroidAutofillEffect : PlatformEffect
 {
@@ -176,10 +176,11 @@ public class AndroidAutofillManager : ICrossAutofillManager
 {
     public void Commit()
     {
-        if (Build.VERSION.SdkInt &gt;= BuildVersionCodes.O)
+        if (Build.VERSION.SdkInt &gt;= BuildVersionCodes.O
+            &amp;&amp; Xamarin.Essentials.Platform.CurrentActivity
+                is AppCompatActivity activity)
         {
-            var manager = (AutofillManager)Application.Context
-                .GetSystemService(
+            var manager = (AutofillManager)activity.GetSystemService(
                     Java.Lang.Class.FromType(typeof(AutofillManager)));
             manager.Commit();
         }
@@ -198,9 +199,9 @@ public class AndroidAutofillManager : ICrossAutofillManager
 <pre tabindex="0"><code>https://&lt;fully qualified domain&gt;/.well-known/apple-app-site-association
 </code></pre><p>This file contains a JSON document with a dictionary that lists all applications associated with your domain:</p>
 <pre tabindex="0"><code>{
-    &quot;webcredentials&quot;: {
-        &quot;apps&quot;: [ 
-            &quot;&lt;Team Identifier&gt;.&lt;Bundle Identifier&gt;&quot; 
+    &#34;webcredentials&#34;: {
+        &#34;apps&#34;: [ 
+            &#34;&lt;Team Identifier&gt;.&lt;Bundle Identifier&gt;&#34; 
         ]
     }
 }
@@ -210,16 +211,16 @@ public class AndroidAutofillManager : ICrossAutofillManager
     ...
     &lt;application&gt;
         ...
-        &lt;meta-data android:name=&quot;asset_statements&quot; 
-                   android:resource=&quot;@string/asset_statements&quot; /&gt;
+        &lt;meta-data android:name=&#34;asset_statements&#34; 
+                   android:resource=&#34;@string/asset_statements&#34; /&gt;
         ...
     &lt;/application&gt;
 &lt;/manifest&gt;
 </code></pre><p>Then you need to specify your domain: add a new string resource called <code>asset_statements</code> with the following content:</p>
 <pre tabindex="0"><code>&lt;resources&gt;
-    &lt;string name=&quot;asset_statements&quot; translatable=&quot;false&quot;&gt;
+    &lt;string name=&#34;asset_statements&#34; translatable=&#34;false&#34;&gt;
     [{
-        \&quot;include\&quot;: \&quot;https://example.com/.well-known/assetlinks.json\&quot;
+        \&#34;include\&#34;: \&#34;https://example.com/.well-known/assetlinks.json\&#34;
     }]
     &lt;/string&gt;
 &lt;/resources&gt;
@@ -228,18 +229,18 @@ public class AndroidAutofillManager : ICrossAutofillManager
 </code></pre><p>And the JSON file content is:</p>
 <pre tabindex="0"><code>[
     {
-        &quot;relation&quot;: [&quot;delegate_permission/common.get_login_creds&quot;],
-        &quot;target&quot;: {
-            &quot;namespace&quot;: &quot;web&quot;,
-            &quot;site&quot;: &quot;https://example.com&quot;
+        &#34;relation&#34;: [&#34;delegate_permission/common.get_login_creds&#34;],
+        &#34;target&#34;: {
+            &#34;namespace&#34;: &#34;web&#34;,
+            &#34;site&#34;: &#34;https://example.com&#34;
         }
     },
     {
-        &quot;relation&quot;: [&quot;delegate_permission/common.get_login_creds&quot;],
-        &quot;target&quot;: {
-            &quot;namespace&quot;: &quot;android_app&quot;,
-            &quot;package_name&quot;: &quot;com.example&quot;,
-            &quot;sha256_cert_fingerprints&quot;: [ &quot;74:A6:D8:3F:69:48:DE:96:59:40:9E:52:67:82:E7:0F:3F:E1:6B:B5:27:84:1B:2B:07:81:18:4E:2A:C7:3E:3F&quot; ]
+        &#34;relation&#34;: [&#34;delegate_permission/common.get_login_creds&#34;],
+        &#34;target&#34;: {
+            &#34;namespace&#34;: &#34;android_app&#34;,
+            &#34;package_name&#34;: &#34;com.example&#34;,
+            &#34;sha256_cert_fingerprints&#34;: [ &#34;74:A6:D8:3F:69:48:DE:96:59:40:9E:52:67:82:E7:0F:3F:E1:6B:B5:27:84:1B:2B:07:81:18:4E:2A:C7:3E:3F&#34; ]
         }
     }
 ]

@@ -33,7 +33,7 @@
 &lt;p&gt;&lt;img src=&#34;https://mikalaidaronin.info/images/xcode-build-configuration.png&#34; alt=&#34;Xcode screenshot&#34;&gt;&lt;/p&gt;
 &lt;p&gt;Set the active architecture to &amp;ldquo;Generic iOS device&amp;rdquo; and select Product → Build For → Running in the Xcode menu bar. Next, set the active architecture to any simulator and build the target again.&lt;/p&gt;
 &lt;p&gt;If you are on macOS Mojave 10.14 or below, you might see the following error when trying to build the Xcode project:&lt;/p&gt;
-&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;error: Building for Mac Catalyst requires macOS 10.15 or later. (in target &#39;targetA&#39; from project &#39;targetB&#39;)
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;error: Building for Mac Catalyst requires macOS 10.15 or later. (in target &amp;#39;targetA&amp;#39; from project &amp;#39;targetB&amp;#39;)
 &lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Go to the target Build Settings in Xcode and change &lt;code&gt;Supports Mac Catalyst&lt;/code&gt; property to &lt;code&gt;No&lt;/code&gt;:&lt;/p&gt;
 &lt;p&gt;&lt;img src=&#34;https://mikalaidaronin.info/images/xcode-supports-mac-catalyst.png&#34; alt=&#34;Xcode screenshot&#34;&gt;&lt;/p&gt;
 &lt;p&gt;Locate &lt;code&gt;Release-iphoneos&lt;/code&gt; and &lt;code&gt;Release-iphonesimulator&lt;/code&gt; by choosing &amp;ldquo;Show in Finder&amp;rdquo; in the context menu of your target product. There directories are exactly what you need in the next steps.&lt;/p&gt;
@@ -66,13 +66,13 @@ Architectures in the fat file: Starscream.framework/Starscream are: i386 x86_64 
 &lt;p&gt;At this step, create a new Xamarin.iOS biding project in Visual Studio and copy &lt;code&gt;ApiDefinitions.cs&lt;/code&gt; and &lt;code&gt;Structs.cs&lt;/code&gt; along with &lt;code&gt;Starscream.framework&lt;/code&gt; directory into the project. The &lt;code&gt;csproj&lt;/code&gt; file of the binding project should look something like this:&lt;/p&gt;
 &lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;...
   &amp;lt;ItemGroup&amp;gt;
-    &amp;lt;ObjcBindingApiDefinition Include=&amp;quot;ApiDefinition.cs&amp;quot; /&amp;gt;
+    &amp;lt;ObjcBindingApiDefinition Include=&amp;#34;ApiDefinition.cs&amp;#34; /&amp;gt;
   &amp;lt;/ItemGroup&amp;gt;
   &amp;lt;ItemGroup&amp;gt;
-    &amp;lt;ObjcBindingCoreSource Include=&amp;quot;Structs.cs&amp;quot; /&amp;gt;
+    &amp;lt;ObjcBindingCoreSource Include=&amp;#34;Structs.cs&amp;#34; /&amp;gt;
   &amp;lt;/ItemGroup&amp;gt;
   &amp;lt;ItemGroup&amp;gt;
-    &amp;lt;NativeReference Include=&amp;quot;Starscream.framework&amp;quot;&amp;gt;
+    &amp;lt;NativeReference Include=&amp;#34;Starscream.framework&amp;#34;&amp;gt;
       &amp;lt;Kind&amp;gt;Framework&amp;lt;/Kind&amp;gt;
       &amp;lt;SmartLink&amp;gt;False&amp;lt;/SmartLink&amp;gt;
     &amp;lt;/NativeReference&amp;gt;
@@ -115,7 +115,7 @@ Architectures in the fat file: Starscream.framework/Starscream are: i386 x86_64 
 &lt;li&gt;Mac Catalyst相关报错: &lt;a href=&#34;https://www.jianshu.com/p/8bcea91b1f2d&#34;&gt;jianshu.com&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;Objective Sharpie fails with errors originating in the SDK&amp;rsquo;s header files: &lt;a href=&#34;https://stackoverflow.com/questions/32845660/objective-sharpie-fails-with-errors-originating-in-the-sdks-header-files&#34;&gt;stackoverflow.com&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;[ObjectiveSharpie] Unsupported clang availability platform: &amp;lsquo;macCatalyst&amp;rsquo; #7109: &lt;a href=&#34;https://github.com/xamarin/xamarin-macios/issues/7109&#34;&gt;github.com/xamarin&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;MT5212 not reported -&amp;gt; Error MT5216: Native linking failed for libSZCAAuth.dll.dylib&#39; instead #4889: &lt;a href=&#34;https://github.com/xamarin/xamarin-macios/issues/4889&#34;&gt;github.com/xamarin&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;MT5212 not reported -&amp;gt; Error MT5216: Native linking failed for libSZCAAuth.dll.dylib&amp;rsquo; instead #4889: &lt;a href=&#34;https://github.com/xamarin/xamarin-macios/issues/4889&#34;&gt;github.com/xamarin&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;</description>
     </item>
     
@@ -132,7 +132,7 @@ Architectures in the fat file: Starscream.framework/Starscream are: i386 x86_64 
 {
     public AutofillContentType Type { get; set; }
 
-    public AutofillEffect() : base(&amp;quot;PasswordAutofillSample.&amp;quot; + nameof(AutofillEffect))
+    public AutofillEffect() : base(&amp;#34;PasswordAutofillSample.&amp;#34; + nameof(AutofillEffect))
     {
     }
 }
@@ -145,25 +145,25 @@ Architectures in the fat file: Starscream.framework/Starscream are: i386 x86_64 
 }
 &lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Now we can use this effect on our login page. Let&amp;rsquo;s attach them to the username and password entries:&lt;/p&gt;
 &lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;&amp;lt;Entry
-    Keyboard=&amp;quot;Email&amp;quot;
-    Placeholder=&amp;quot;Email...&amp;quot;&amp;gt;
+    Keyboard=&amp;#34;Email&amp;#34;
+    Placeholder=&amp;#34;Email...&amp;#34;&amp;gt;
     &amp;lt;Entry.Effects&amp;gt;
         &amp;lt;local:AutofillEffect
-            Type=&amp;quot;Username&amp;quot; /&amp;gt;
+            Type=&amp;#34;Username&amp;#34; /&amp;gt;
     &amp;lt;/Entry.Effects&amp;gt;
 &amp;lt;/Entry&amp;gt;
 &amp;lt;Entry
-    IsPassword=&amp;quot;true&amp;quot;
-    Placeholder=&amp;quot;Password...&amp;quot;&amp;gt;
+    IsPassword=&amp;#34;true&amp;#34;
+    Placeholder=&amp;#34;Password...&amp;#34;&amp;gt;
     &amp;lt;Entry.Effects&amp;gt;
         &amp;lt;local:AutofillEffect
-            Type=&amp;quot;Password&amp;quot; /&amp;gt;
+            Type=&amp;#34;Password&amp;#34; /&amp;gt;
     &amp;lt;/Entry.Effects&amp;gt;
 &amp;lt;/Entry&amp;gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;p&gt;The platform-specific implementation of the effect is simple and short, however you have to make sure you do not call an API that doesn&amp;rsquo;t exist on this particular platform.&lt;/p&gt;
 &lt;p&gt;iOS effect implementation:&lt;/p&gt;
-&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;[assembly: Xamarin.Forms.ResolutionGroupName(&amp;quot;PasswordAutofillSample&amp;quot;)]
-[assembly: Xamarin.Forms.ExportEffect(typeof(AppleAutofillEffect), &amp;quot;AutofillEffect&amp;quot;)]
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;[assembly: Xamarin.Forms.ResolutionGroupName(&amp;#34;PasswordAutofillSample&amp;#34;)]
+[assembly: Xamarin.Forms.ExportEffect(typeof(AppleAutofillEffect), &amp;#34;AutofillEffect&amp;#34;)]
 ...
 public class AppleAutofillEffect : PlatformEffect
 {
@@ -200,8 +200,8 @@ public class AppleAutofillEffect : PlatformEffect
     }
 }
 &lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Android effect implementation:&lt;/p&gt;
-&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;[assembly: Xamarin.Forms.ResolutionGroupName(&amp;quot;PasswordAutofillSample&amp;quot;)]
-[assembly: Xamarin.Forms.ExportEffect(typeof(AndroidAutofillEffect), &amp;quot;AutofillEffect&amp;quot;)]
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;[assembly: Xamarin.Forms.ResolutionGroupName(&amp;#34;PasswordAutofillSample&amp;#34;)]
+[assembly: Xamarin.Forms.ExportEffect(typeof(AndroidAutofillEffect), &amp;#34;AutofillEffect&amp;#34;)]
 ...
 public class AndroidAutofillEffect : PlatformEffect
 {
@@ -256,10 +256,11 @@ public class AndroidAutofillManager : ICrossAutofillManager
 {
     public void Commit()
     {
-        if (Build.VERSION.SdkInt &amp;gt;= BuildVersionCodes.O)
+        if (Build.VERSION.SdkInt &amp;gt;= BuildVersionCodes.O
+            &amp;amp;&amp;amp; Xamarin.Essentials.Platform.CurrentActivity
+                is AppCompatActivity activity)
         {
-            var manager = (AutofillManager)Application.Context
-                .GetSystemService(
+            var manager = (AutofillManager)activity.GetSystemService(
                     Java.Lang.Class.FromType(typeof(AutofillManager)));
             manager.Commit();
         }
@@ -278,9 +279,9 @@ public class AndroidAutofillManager : ICrossAutofillManager
 &lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;https://&amp;lt;fully qualified domain&amp;gt;/.well-known/apple-app-site-association
 &lt;/code&gt;&lt;/pre&gt;&lt;p&gt;This file contains a JSON document with a dictionary that lists all applications associated with your domain:&lt;/p&gt;
 &lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;{
-    &amp;quot;webcredentials&amp;quot;: {
-        &amp;quot;apps&amp;quot;: [ 
-            &amp;quot;&amp;lt;Team Identifier&amp;gt;.&amp;lt;Bundle Identifier&amp;gt;&amp;quot; 
+    &amp;#34;webcredentials&amp;#34;: {
+        &amp;#34;apps&amp;#34;: [ 
+            &amp;#34;&amp;lt;Team Identifier&amp;gt;.&amp;lt;Bundle Identifier&amp;gt;&amp;#34; 
         ]
     }
 }
@@ -290,16 +291,16 @@ public class AndroidAutofillManager : ICrossAutofillManager
     ...
     &amp;lt;application&amp;gt;
         ...
-        &amp;lt;meta-data android:name=&amp;quot;asset_statements&amp;quot; 
-                   android:resource=&amp;quot;@string/asset_statements&amp;quot; /&amp;gt;
+        &amp;lt;meta-data android:name=&amp;#34;asset_statements&amp;#34; 
+                   android:resource=&amp;#34;@string/asset_statements&amp;#34; /&amp;gt;
         ...
     &amp;lt;/application&amp;gt;
 &amp;lt;/manifest&amp;gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Then you need to specify your domain: add a new string resource called &lt;code&gt;asset_statements&lt;/code&gt; with the following content:&lt;/p&gt;
 &lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;&amp;lt;resources&amp;gt;
-    &amp;lt;string name=&amp;quot;asset_statements&amp;quot; translatable=&amp;quot;false&amp;quot;&amp;gt;
+    &amp;lt;string name=&amp;#34;asset_statements&amp;#34; translatable=&amp;#34;false&amp;#34;&amp;gt;
     [{
-        \&amp;quot;include\&amp;quot;: \&amp;quot;https://example.com/.well-known/assetlinks.json\&amp;quot;
+        \&amp;#34;include\&amp;#34;: \&amp;#34;https://example.com/.well-known/assetlinks.json\&amp;#34;
     }]
     &amp;lt;/string&amp;gt;
 &amp;lt;/resources&amp;gt;
@@ -308,18 +309,18 @@ public class AndroidAutofillManager : ICrossAutofillManager
 &lt;/code&gt;&lt;/pre&gt;&lt;p&gt;And the JSON file content is:&lt;/p&gt;
 &lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;[
     {
-        &amp;quot;relation&amp;quot;: [&amp;quot;delegate_permission/common.get_login_creds&amp;quot;],
-        &amp;quot;target&amp;quot;: {
-            &amp;quot;namespace&amp;quot;: &amp;quot;web&amp;quot;,
-            &amp;quot;site&amp;quot;: &amp;quot;https://example.com&amp;quot;
+        &amp;#34;relation&amp;#34;: [&amp;#34;delegate_permission/common.get_login_creds&amp;#34;],
+        &amp;#34;target&amp;#34;: {
+            &amp;#34;namespace&amp;#34;: &amp;#34;web&amp;#34;,
+            &amp;#34;site&amp;#34;: &amp;#34;https://example.com&amp;#34;
         }
     },
     {
-        &amp;quot;relation&amp;quot;: [&amp;quot;delegate_permission/common.get_login_creds&amp;quot;],
-        &amp;quot;target&amp;quot;: {
-            &amp;quot;namespace&amp;quot;: &amp;quot;android_app&amp;quot;,
-            &amp;quot;package_name&amp;quot;: &amp;quot;com.example&amp;quot;,
-            &amp;quot;sha256_cert_fingerprints&amp;quot;: [ &amp;quot;74:A6:D8:3F:69:48:DE:96:59:40:9E:52:67:82:E7:0F:3F:E1:6B:B5:27:84:1B:2B:07:81:18:4E:2A:C7:3E:3F&amp;quot; ]
+        &amp;#34;relation&amp;#34;: [&amp;#34;delegate_permission/common.get_login_creds&amp;#34;],
+        &amp;#34;target&amp;#34;: {
+            &amp;#34;namespace&amp;#34;: &amp;#34;android_app&amp;#34;,
+            &amp;#34;package_name&amp;#34;: &amp;#34;com.example&amp;#34;,
+            &amp;#34;sha256_cert_fingerprints&amp;#34;: [ &amp;#34;74:A6:D8:3F:69:48:DE:96:59:40:9E:52:67:82:E7:0F:3F:E1:6B:B5:27:84:1B:2B:07:81:18:4E:2A:C7:3E:3F&amp;#34; ]
         }
     }
 ]
